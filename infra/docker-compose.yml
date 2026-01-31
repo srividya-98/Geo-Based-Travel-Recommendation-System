@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  postgis:
+    image: postgis/postgis:16-3.4
+    container_name: travel-agent-postgis
+    environment:
+      POSTGRES_DB: travel_agent
+      POSTGRES_USER: travel_user
+      POSTGRES_PASSWORD: travel_secret_2024
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+      - ../data/osm:/osm-data:ro
+      - ../scripts/create_indexes.sql:/docker-entrypoint-initdb.d/01_create_indexes.sql:ro
+      - ./init_db.sql:/docker-entrypoint-initdb.d/00_init_db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U travel_user -d travel_agent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    shm_size: 256mb
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "work_mem=64MB"
+      - "-c"
+      - "maintenance_work_mem=256MB"
+      - "-c"
+      - "max_parallel_workers_per_gather=2"
+
+  # osm2pgsql container for importing data
+  osm2pgsql:
+    image: iboates/osm2pgsql:latest
+    container_name: travel-agent-osm2pgsql
+    depends_on:
+      postgis:
+        condition: service_healthy
+    volumes:
+      - ../data/osm:/osm-data:ro
+      - ../scripts:/scripts:ro
+    environment:
+      PGHOST: postgis
+      PGPORT: 5432
+      PGDATABASE: travel_agent
+      PGUSER: travel_user
+      PGPASSWORD: travel_secret_2024
+    profiles:
+      - import
+    entrypoint: ["/bin/bash"]
+    command: ["-c", "echo 'osm2pgsql ready. Run: docker compose --profile import run osm2pgsql /scripts/import_osm.sh <region>'"]
+
+volumes:
+  postgis_data:
+    name: travel-agent-postgis-data

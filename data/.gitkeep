@@ -1,0 +1,6 @@
+# This directory stores OSM data files
+# .osm.pbf files are large and should not be committed
+
+# To download data:
+#   cd scripts
+#   python download_geofabrik.py spain
