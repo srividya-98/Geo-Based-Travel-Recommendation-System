@@ -214,7 +214,7 @@ interface BayesianRankRequest {
     hasHours?: boolean;
   }>;
   prefs: {
-    vibe: string;
+    vibe: string | null;
     category: string;
     vegOnly: boolean;
     maxWalkMinutes: number;
@@ -247,7 +247,7 @@ async function callBayesianRankingApi(
   places: PlaceRaw[],
   centerLat: number,
   centerLon: number,
-  prefs: { vibe: string; category: string; vegOnly: boolean; maxWalkMinutes: number },
+  prefs: { vibe: string | null; category: string; vegOnly: boolean; maxWalkMinutes: number },
   strategy: 'mean' | 'lower_bound' = 'mean'
 ): Promise<BayesianRankResponse | null> {
   if (!USE_BAYESIAN_RANKING) {
@@ -745,9 +745,9 @@ export async function GET(request: NextRequest) {
 
   const cached = placesCache.get(cacheKey) as { places: PlaceRaw[]; subcategories: Map<string, string>; source: DataSource } | null;
   
-  let rawPlaces: PlaceRaw[];
+  let rawPlaces: PlaceRaw[] | undefined;
   let subcategories: Map<string, string> = new Map();
-  let dataSource: DataSource;
+  let dataSource: DataSource | undefined;
   let fromCache = false;
 
   if (cached) {
@@ -841,7 +841,7 @@ export async function GET(request: NextRequest) {
   
   // Debug logging
   if (process.env.NODE_ENV === 'development') {
-    logRankingDebug(dataSource, rankingResult, vibe);
+    logRankingDebug(dataSource || 'unknown', rankingResult, vibe || undefined);
   }
 
   // Try Bayesian ranking API (optional enhancement)

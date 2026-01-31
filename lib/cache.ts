@@ -123,7 +123,7 @@ export class LRUCache<T> {
 /**
  * Generate cache key from parameters.
  */
-export function makeCacheKey(params: Record<string, string | number | boolean>): string {
+export function makeCacheKey(params: Record<string, string | number | boolean | null>): string {
   const sorted = Object.entries(params)
     .filter(([, v]) => v !== undefined && v !== null)
     .sort(([a], [b]) => a.localeCompare(b))

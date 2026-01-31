@@ -47,7 +47,7 @@ export interface RankedPlace {
   name: string;
   lat: number;
   lon: number;
-  category: string;
+  category: string | null;
   type: string;
   tags: string[];
   distanceKm: number;
@@ -86,7 +86,7 @@ const BAYESIAN_M = 30;  // Minimum votes for full Bayesian weight
 const WALKING_SPEED_KMH = 4.5;
 
 // Vibe-to-category confidence mapping
-const VIBE_CATEGORY_AFFINITY: Record<Vibe, Record<string, number>> = {
+const VIBE_CATEGORY_AFFINITY: Record<NonNullable<Vibe>, Record<string, number>> = {
   insta: {
     cafe: 0.95, restaurant: 0.8, scenic: 0.9, indoor: 0.7, grocery: 0.3,
   },
@@ -105,7 +105,7 @@ const VIBE_CATEGORY_AFFINITY: Record<Vibe, Record<string, number>> = {
 };
 
 // Keywords that boost vibe confidence
-const VIBE_KEYWORDS: Record<Vibe, string[]> = {
+const VIBE_KEYWORDS: Record<NonNullable<Vibe>, string[]> = {
   insta: ['aesthetic', 'artisan', 'boutique', 'rooftop', 'garden', 'terrace', 'design', 'craft', 'specialty', 'brunch'],
   work: ['wifi', 'coworking', 'quiet', 'study', 'laptop', 'workspace', 'coffee'],
   romantic: ['candlelit', 'intimate', 'wine', 'fine dining', 'rooftop', 'waterfront', 'sunset', 'cozy'],
@@ -117,7 +117,10 @@ const VIBE_KEYWORDS: Record<Vibe, string[]> = {
 // STAGE 1: HARD FILTERS
 // =============================================================================
 
-function categoryMatches(placeCategories: string[], selectedCategory: string): boolean {
+function categoryMatches(placeCategories: string[], selectedCategory: string | null): boolean {
+  // No category filter = matches all
+  if (!selectedCategory) return true;
+  
   const categoryMap: Record<string, string[]> = {
     restaurant: ['restaurant', 'food', 'dining', 'eatery', 'bistro', 'bar', 'grill', 'pizzeria', 'steakhouse', 'sushi', 'fast food'],
     cafe: ['cafe', 'coffee', 'tea', 'bakery', 'dessert', 'pastry', 'juice'],
@@ -141,9 +144,13 @@ function hasQualitySignal(place: FsqPlaceRaw): boolean {
   return place.rating !== null || place.popularity !== null;
 }
 
-function computeVibeConfidence(place: FsqPlaceRaw, vibe: Vibe, category: string): number {
-  // Base confidence from category affinity
-  let confidence = VIBE_CATEGORY_AFFINITY[vibe]?.[category] ?? 0.5;
+function computeVibeConfidence(place: FsqPlaceRaw, vibe: Vibe, category: string | null): number {
+  // No vibe filter = full confidence
+  if (!vibe) return 1.0;
+  
+  // Base confidence from category affinity (use 'restaurant' as default if no category)
+  const categoryKey = category || 'restaurant';
+  let confidence = VIBE_CATEGORY_AFFINITY[vibe]?.[categoryKey] ?? 0.5;
   
   // Boost from keyword matches in categories/name
   const keywords = VIBE_KEYWORDS[vibe] || [];
@@ -255,7 +262,7 @@ function compareForRanking(a: RankedPlace, b: RankedPlace): number {
 // =============================================================================
 
 // Vibe-specific reason labels
-const VIBE_REASON_LABELS: Record<Vibe, string> = {
+const VIBE_REASON_LABELS: Record<NonNullable<Vibe>, string> = {
   insta: 'Aesthetic spot',
   work: 'Work-friendly',
   romantic: 'Romantic setting',
@@ -266,8 +273,8 @@ const VIBE_REASON_LABELS: Record<Vibe, string> = {
 function generateReasons(place: FsqPlaceRaw, vibeConfidence: number, prefs: Preferences): string[] {
   const reasons: string[] = [];
   
-  // Vibe-specific reason (if high confidence)
-  if (vibeConfidence >= 0.7) {
+  // Vibe-specific reason (if high confidence and vibe is set)
+  if (vibeConfidence >= 0.7 && prefs.vibe) {
     reasons.push(VIBE_REASON_LABELS[prefs.vibe]);
   }
   

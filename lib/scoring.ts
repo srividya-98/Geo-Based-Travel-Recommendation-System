@@ -16,7 +16,7 @@ export interface ScoredPlace {
   name: string;
   lat: number;
   lon: number;
-  category: string;
+  category: string | null;
   type: string;
   tags: string[];
   distanceKm: number;
@@ -62,7 +62,7 @@ interface VibeProfile {
 // VIBE PROFILES - Production-grade configuration
 // =============================================================================
 
-export const VIBE_PROFILES: Record<Vibe, VibeProfile> = {
+export const VIBE_PROFILES: Record<NonNullable<Vibe>, VibeProfile> = {
   insta: {
     name: 'Insta / Aesthetic',
     weights: {
@@ -426,7 +426,7 @@ function scoreVegFriendly(place: PlaceRaw, vegOnly: boolean): { score: number; i
  * Returns score 0-100
  */
 // Vibe-specific reason labels
-const VIBE_REASON_LABELS: Record<Vibe, string> = {
+const VIBE_REASON_LABELS: Record<NonNullable<Vibe>, string> = {
   insta: 'Aesthetic spot',
   work: 'Work-friendly',
   romantic: 'Romantic setting',

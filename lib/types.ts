@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Vibe options - 5 recruiter-grade vibe chips (OPTIONAL feature)
 export const VibeSchema = z.enum(['insta', 'work', 'romantic', 'budget', 'lively']).nullable().optional();
-export type Vibe = 'insta' | 'work' | 'romantic' | 'budget' | 'lively' | null | undefined;
+export type Vibe = 'insta' | 'work' | 'romantic' | 'budget' | 'lively' | null;
 
 // Vibe display info for UI
 export const VIBE_OPTIONS = [
